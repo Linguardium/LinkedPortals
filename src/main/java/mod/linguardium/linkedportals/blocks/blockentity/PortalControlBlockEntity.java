@@ -184,6 +184,7 @@ public class PortalControlBlockEntity extends BlockEntity implements PortalStruc
         }
         if (!getPortalStructure().map(portalStructure->portalStructure.validate(this.getWorld())).orElse(true)) {
             this.destroy(false);
+            this.getWorld().setBlockState(this.getPos(),this.getCachedState().with(Properties.LOCKED, false));
         }
     }
 

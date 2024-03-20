@@ -20,7 +20,9 @@ public class PortalControllerCreationHandler implements BlockUsageHandler{
     public ActionResult handle(ServerWorld world, ServerPlayerEntity player, BlockPos pos, BlockHitResult hitResult, ItemStack heldStack, BlockState state, @Nullable BlockEntity blockEntity) {
         if (!player.canModifyAt(world, pos)) return ActionResult.PASS;
         if (state.isIn(LinkedPortalTags.PORTAL_CONTROLLER_BASE) && heldStack.isIn(LinkedPortalTags.VALID_ACTIVATORS)) {
-            heldStack.decrement(1);
+            if (!player.isCreative()) {
+                heldStack.decrement(1);
+            }
             world.setBlockState(pos, LinkedPortalBlocks.PORTAL_CONTROL_BLOCK.getDefaultState());
             if (world.getBlockEntity(pos) instanceof PortalControlBlockEntity portalControlBlockEntity) {
                 portalControlBlockEntity.setBaseBlock(state);
