@@ -1,0 +1,9 @@
+{
+  "valid_frame_rule": {
+    "predicate_type": "linkedportals:default_frame"
+  },
+  "valid_interior_rule": {
+    "block": "minecraft:air",
+    "predicate_type": "minecraft:block_match"
+  }
+}

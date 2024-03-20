@@ -1,0 +1,4 @@
+Server owners will provide valid portal frame tags and filler blockstates as json files
+Custom control block using lodestone will be used (may change)
+control block will contain config for portal
+Custom portal blocks, using polymer to mimic the filler blockstate, reading from control block
