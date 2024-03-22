@@ -20,7 +20,7 @@ public class LinkedPortals implements ModInitializer {
 		LinkedPortalItems.init();
 		LinkedPortalTags.init();
 		LinkedPortalRegistries.init();
-		LinkedPortalRuleTestType.init();
+		LinkedPortalBlockMatcherRules.init();
 
 
 		LOGGER.info("Hello Fabric world!");

@@ -14,7 +14,6 @@ import java.util.List;
 import static mod.linguardium.linkedportals.LinkedPortals.id;
 
 public record PortalStructure(List<BlockPos> frames, List<BlockPos> teleporters, Direction facing, Identifier portalType) {
-    public static final PortalStructure EMPTY = new PortalStructure(List.of(), List.of(), Direction.NORTH, id("default"));
     public static Codec<PortalStructure> CODEC = RecordCodecBuilder.create(instance->instance.group(
             Codec.list(BlockPos.CODEC).fieldOf("FramePositions").forGetter(PortalStructure::frames),
             Codec.list(BlockPos.CODEC).fieldOf("TeleporterPositions").forGetter(PortalStructure::teleporters),
@@ -29,7 +28,7 @@ public record PortalStructure(List<BlockPos> frames, List<BlockPos> teleporters,
     public boolean validate(WorldAccess world) {
         final LinkedPortalType type = LinkedPortalRegistries.portalTypes().getOrEmpty(portalType()).orElse(null);
         if (type == null) return false;
-        return frames.stream().allMatch(pos->type.isValidFrameAtPosition(world,pos)) &&
+        return frames.stream().allMatch(pos->type.frameBlockStateValidator().test(world,pos)) &&
                 teleporters.stream().allMatch(pos->world.getBlockState(pos).isOf(LinkedPortalBlocks.PORTAL_FILL_BLOCK));
     }
     public Vec3d getLowestTeleportPos() {

@@ -1,11 +1,12 @@
 package mod.linguardium.linkedportals.portal;
 
 import mod.linguardium.linkedportals.config.LinkedPortalType;
+import mod.linguardium.linkedportals.portal.rules.BlockInstanceMatcher;
+import mod.linguardium.linkedportals.portal.rules.base.BlockMatcher;
+import mod.linguardium.linkedportals.portal.rules.OrMatcher;
 import mod.linguardium.linkedportals.registry.LinkedPortalBlocks;
 import mod.linguardium.linkedportals.registry.LinkedPortalRegistries;
-import net.minecraft.block.BlockState;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.structure.rule.RuleTest;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
@@ -13,11 +14,16 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class PortalBuilder {
-    RuleTest edgeValidator;
-    RuleTest interiorValidator;
+    static final BlockMatcher CONTROLLER_BLOCK_MATCHER = new BlockInstanceMatcher(LinkedPortalBlocks.PORTAL_CONTROL_BLOCK);
+    static final Function<BlockMatcher,BlockMatcher> controllerBlockOrMatcher = (matcher)->new OrMatcher(CONTROLLER_BLOCK_MATCHER, matcher);
+
+    BlockMatcher edgeValidator;
+    BlockMatcher edgeOrControllerValidator;
+    BlockMatcher interiorValidator;
     BlockPos startPos;
     int limit;
     Direction projectionDirection;
@@ -45,6 +51,7 @@ public class PortalBuilder {
             this.portalType = registryEntry.getKey().orElse(LinkedPortalRegistries.ENTRY_LINKED_PORTAL_TYPE_DEFAULT_KEY).getValue();
             this.interiorValidator = type.innerBlockStateValidator();
             this.edgeValidator = type.frameBlockStateValidator();
+            this.edgeOrControllerValidator = controllerBlockOrMatcher.apply(this.edgeValidator);
             this.limit = type.limit();
             if (findPortalOfType(world)) return true;
         }
@@ -56,9 +63,7 @@ public class PortalBuilder {
         return false;
     }
     private boolean findPortalOfType(World world) {
-        Predicate<BlockPos> interiorPosValidator = getPosValidator(world, this.interiorValidator);
-        Predicate<BlockPos> framePosValidator = getEdgePosValidator(world, this.edgeValidator);
-        if (!framePosValidator.test(this.startPos)) return false;
+        if (!this.edgeValidator.test(world,this.startPos)) return false;
         for (Direction projectionDirectionTry : Direction.values()) {
             this.projectionDirection = projectionDirectionTry;
             foundController = null;
@@ -67,7 +72,7 @@ public class PortalBuilder {
                 this.spanAxis = spanAxisTry;
                 if (this.spanAxis.equals(this.projectionDirection.getAxis())) continue;
                 this.portalFacing = this.projectionDirection.rotateClockwise(spanAxis);
-                if (getPortalLayers(interiorPosValidator, framePosValidator)) return true;
+                if (getPortalLayers(interiorValidator.getBlockPosMatcher(world), edgeOrControllerValidator.getBlockPosMatcher(world))) return true;
             }
         }
         layers = new ArrayList<>();
@@ -122,19 +127,6 @@ public class PortalBuilder {
         return true;
     }
 
-    private Predicate<BlockPos> getPosValidator(World world, RuleTest validationRuleTest) {
-            return blockPos->validationRuleTest.test(world.getBlockState(blockPos), world.getRandom());
-    }
-    private Predicate<BlockPos> getEdgePosValidator(World world, RuleTest validationRuleTest) {
-        return pos-> {
-            BlockState state = world.getBlockState(pos);
-            if (state.isOf(LinkedPortalBlocks.PORTAL_CONTROL_BLOCK) && (foundController == null || pos.equals(foundController))) {
-                foundController = pos.toImmutable();
-                return true;
-            }
-            return validationRuleTest.test(state,world.getRandom());
-        };
-    }
     private int getFirstEdgeDistanceFromCenter() {
         if (layers.isEmpty()) return this.limit;
         return 2;
@@ -194,4 +186,5 @@ public class PortalBuilder {
         frames.removeIf(pos->pos.equals(foundController));
         return new PortalStructure(List.copyOf(frames),List.copyOf(teleporters),this.portalFacing,this.portalType);
     }
+
 }
